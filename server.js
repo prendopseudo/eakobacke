@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { createNewUser, findUser } = require('./controllers/userController');
+const { generateTempCredentials, verifyTempCredentials } = require('./controllers/authController');
 const bodyParser = require('body-parser');
 
 const app = express();
@@ -22,6 +23,8 @@ app.get('/', (req, res) => {
 
 app.get('/newUser', createNewUser);
 app.post('/findUser', findUser);
+app.post('/generateTempCredentials', generateTempCredentials);
+app.post('/verifyTempCredentials', verifyTempCredentials);
 
 // Start Server
 app.listen(port, () => {
