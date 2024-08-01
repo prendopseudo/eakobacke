@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const mongoose = require('mongoose');
 const { createNewUser, findUser } = require('./controllers/userController');
 const { generateTempCredentials, verifyTempCredentials } = require('./controllers/authController');
