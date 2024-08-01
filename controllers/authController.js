@@ -28,9 +28,11 @@ const generateTempCredentials = async (req, res) => {
 const verifyTempCredentials = async (req, res) => {
   try {
     const { userId, password } = req.body;
+    console.log(`Received credentials: userId = ${userId}, password = ${password}`);
     const tempCredentials = await TempCredentials.findOne({ userId, password });
 
     if (!tempCredentials) {
+      console.log('Invalid credentials or credentials have expired.');
       return res.status(401).send('Invalid credentials');
     }
 
@@ -39,9 +41,10 @@ const verifyTempCredentials = async (req, res) => {
 
     res.json({ message: 'Access granted' });
   } catch (err) {
-    console.error(err);
+    console.error('Error verifying credentials', err);
     res.status(500).send('Error verifying credentials');
   }
 };
+
 
 module.exports = { generateTempCredentials, verifyTempCredentials };
