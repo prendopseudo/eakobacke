@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Define User Schema
 const userSchema = new mongoose.Schema({
   userId: {
     iv: String,
@@ -9,10 +8,10 @@ const userSchema = new mongoose.Schema({
   password: {
     iv: String,
     content: String
-  }
+  },
+  credits: Number  // New field for storing user credits
 });
 
-// Create User Model
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;

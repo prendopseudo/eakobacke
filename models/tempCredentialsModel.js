@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Define TempCredentials Schema
 const tempCredentialsSchema = new mongoose.Schema({
   userId: String,
   password: String,
@@ -11,7 +10,6 @@ const tempCredentialsSchema = new mongoose.Schema({
   }
 });
 
-// Create TempCredentials Model
 const TempCredentials = mongoose.model('TempCredentials', tempCredentialsSchema);
 
 module.exports = TempCredentials;
