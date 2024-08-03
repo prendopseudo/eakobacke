@@ -2,8 +2,8 @@ const User = require('../models/userModel');
 const crypto = require('crypto');
 
 const algorithm = 'aes-256-ctr';
-const secretKey = crypto.randomBytes(32);
-const iv = crypto.randomBytes(16);
+const secretKey = Buffer.from('ee6c78b5cc51198cec7d3aa209ecd0705e09c9c021826dfac9df062e3764d6a0', 'hex'); // Replace with your actual key
+const iv = crypto.randomBytes(16); // Ensure iv is 16 bytes
 
 const encrypt = (text) => {
   const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
@@ -54,9 +54,15 @@ const createNewUser = async (req, res) => {
     await newUser.save();
 
     const baseUrl = 'https://kingexch12-dd377.web.app';
-    const loginLink = `${baseUrl}/?userId=${userId}&password=${password}`;
+    const loginLink = `${baseUrl}/?userId=${encryptedUserId.content}&password=${password}`;
 
-    res.json({ userId, password, credits, loginLink });
+    res.json({
+      encryptedUserId: encryptedUserId.content,
+      iv: encryptedUserId.iv,
+      password,
+      credits,
+      loginLink
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error creating user');
@@ -65,10 +71,8 @@ const createNewUser = async (req, res) => {
 
 const updateUserCredits = async (req, res) => {
   try {
-    const { userId, credits } = req.body;
-    const encryptedUserId = encrypt(userId);
-
-    const user = await User.findOne({ 'userId.content': encryptedUserId.content });
+    const { credits } = req.body;
+    const user = req.user;
 
     if (!user) {
       return res.status(404).send('User not found');
@@ -86,14 +90,18 @@ const updateUserCredits = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { userId, updates } = req.body;
-    const encryptedUserId = encrypt(userId);
-
-    const user = await User.findOneAndUpdate({ 'userId.content': encryptedUserId.content }, updates, { new: true });
+    const { updates } = req.body;
+    const user = req.user;
 
     if (!user) {
       return res.status(404).send('User not found');
     }
+
+    Object.keys(updates).forEach(key => {
+      user[key] = updates[key];
+    });
+
+    await user.save();
 
     res.json({ message: 'User updated successfully', user });
   } catch (err) {
@@ -104,14 +112,13 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const { userId } = req.body;
-    const encryptedUserId = encrypt(userId);
-
-    const user = await User.findOneAndDelete({ 'userId.content': encryptedUserId.content });
+    const user = req.user;
 
     if (!user) {
       return res.status(404).send('User not found');
     }
+
+    await User.deleteOne({ _id: user._id });
 
     res.json({ message: 'User deleted successfully' });
   } catch (err) {
@@ -122,10 +129,7 @@ const deleteUser = async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const encryptedUserId = encrypt(userId);
-
-    const user = await User.findOne({ 'userId.content': encryptedUserId.content });
+    const user = req.user;
 
     if (!user) {
       return res.status(404).send('User not found');
@@ -134,11 +138,45 @@ const getUser = async (req, res) => {
     const decryptedUserId = decrypt(user.userId);
     const decryptedPassword = decrypt(user.password);
 
-    res.json({ userId: decryptedUserId, password: decryptedPassword, credits: user.credits });
+    res.json({
+      userId: decryptedUserId,
+      password: decryptedPassword,
+      credits: user.credits
+    });
   } catch (err) {
     console.error(err);
     res.status(500).send('Error getting user');
   }
 };
 
-module.exports = { createNewUser, updateUserCredits, updateUser, deleteUser, getUser };
+const generateUserLink = async (req, res) => {
+  try {
+    const { userId, password } = req.body;
+
+    const encryptedUserId = encrypt(userId);
+    const encryptedPassword = encrypt(password);
+
+    const baseUrl = 'https://kingexch12-dd377.web.app';
+    const loginLink = `${baseUrl}/?userId=${encryptedUserId.content}&password=${encryptedPassword.content}&iv=${encryptedUserId.iv}`;
+
+    res.json({ loginLink });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating user link');
+  }
+};
+
+const decryptText = (req, res) => {
+  try {
+    const { text, iv } = req.body;
+    
+    const decryptedText = decrypt({ content: text, iv });
+    
+    res.json({ decryptedText });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error decrypting text');
+  }
+};
+
+module.exports = { createNewUser, updateUserCredits, updateUser, deleteUser, getUser, generateUserLink, decryptText };
